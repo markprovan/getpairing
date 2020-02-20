@@ -1,9 +1,8 @@
 module.exports = {
   siteMetadata: {
-    title: 'Gatsby Documentation Starter',
-    description: 'This is a starter for gatsby-theme-documentation'
+    title: "Get Pairing",
+    description:
+      "A guide to get you started, or improve your pair programming experience"
   },
-  plugins: [
-    'gatsby-theme-documentation'
-  ]
-}
+  plugins: ["gatsby-theme-documentation"]
+};
