@@ -9,7 +9,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "gatsby": "^2.21.1",
+    "gatsby": "^2.32.13",
     "gatsby-theme-documentation": "^0.0.27",
     "react": "^16.13.1",
     "react-dom": "^16.13.1"
