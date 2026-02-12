@@ -1,19 +1,24 @@
-# gatsby-starter-documentation
+# Get Pairing
 
-A minimalist starter for
-[gatsby-theme-documentation](https://github.com/johno/gatsby-theme-documentation).
+A guide to get you started, or improve your pair programming experience.
 
-![image](https://user-images.githubusercontent.com/1424573/61085901-ace8e980-a3ee-11e9-84d2-45acbb200fea.png)
+Built with [Astro](https://astro.build/) and TypeScript.
 
-## Installation
+## Development
 
 ```sh
-gatsby new my-docs-site johno/gatsby-starter-documentation
-cd my-docs-site
+pnpm install
+pnpm dev
 ```
 
-## Usage
+## Build
 
 ```sh
-yarn start
+pnpm build
+```
+
+## Preview
+
+```sh
+pnpm preview
 ```
