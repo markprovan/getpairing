@@ -23,20 +23,33 @@ corepack pnpm preview    # serve the built site locally
 
 ## Deployment
 
-Not wired up yet. The site is destined for **Cloudflare Pages**, but the CI
-deploy job is deliberately absent until the `getpairing` Pages project and its
-credentials exist — a workflow that fails on every push to `master` is worse
-than no workflow.
+Deployed to **Cloudflare Pages** (project `getpairing`, a **Direct Upload**
+project — Cloudflare is deliberately *not* connected to this repo). GitHub
+Actions is the only thing that builds the site; wrangler just ships the output.
 
-`corepack pnpm deploy` works locally today if you have `wrangler` authenticated
-(`wrangler login`). Restoring the automated deploy needs:
+- Push to `master` → `.github/workflows/deploy.yml` builds and publishes to
+  production.
+- Open a PR → the `preview` job in `ci.yml` deploys the same artifact to a
+  preview URL and comments it on the PR. It skips cleanly if the Cloudflare
+  secrets aren't set, so a missing secret never blocks a PR.
+- `corepack pnpm deploy` does a production deploy locally (needs
+  `wrangler login`).
 
-- repo secrets `CLOUDFLARE_API_TOKEN` (with *Cloudflare Pages: Edit*) and
-  `CLOUDFLARE_ACCOUNT_ID`
-- a `getpairing` Pages project whose **production branch is `master`**, to match
-  the `--branch=master` flag — otherwise uploads land as preview deployments
-  instead of going live
-- DNS for getpairing.com pointed at Pages, and the old Netlify site retired
+Required repository secrets:
+
+- `CLOUDFLARE_API_TOKEN` — with the *Cloudflare Pages: Edit* permission
+- `CLOUDFLARE_ACCOUNT_ID`
+
+Two things that will bite if changed: the Pages project's **production branch
+must be `master`** to match the `--branch=master` flag, or uploads land as
+preview deployments instead of going live; and a Direct Upload project
+[cannot be converted to a Git-connected one](https://developers.cloudflare.com/pages/get-started/direct-upload/)
+(or back) — that needs a new project.
+
+Both workflows **fail the build if no font files land in `dist/`**. Astro fetches
+the faces at build time and a fetch failure is only a *warning*, so without that
+check a build would succeed and silently ship the fallback stacks. If it trips,
+look for "No data found for font family" in the build log.
 
 ## Theme
 
