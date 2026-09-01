@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://getpairing.com/sitemap-index.xml

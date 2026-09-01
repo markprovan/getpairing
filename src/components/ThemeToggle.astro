@@ -1,0 +1,168 @@
+---
+
+---
+
+<button
+    id="theme-toggle"
+    class="theme-toggle"
+    type="button"
+    aria-label="Switch to dark theme"
+    aria-pressed="false"
+>
+    <svg
+        class="icon icon-moon"
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+    >
+        <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"></path>
+    </svg>
+    <svg
+        class="icon icon-sun"
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+    >
+        <circle cx="12" cy="12" r="4"></circle>
+        <path
+            d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"
+        ></path>
+    </svg>
+</button>
+
+<style>
+    .theme-toggle {
+        margin-left: auto;
+        /* Anchor to the top-right of the masthead rather than floating
+           vertically centered against the tall avatar/title block. */
+        align-self: flex-start;
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border);
+        color: var(--color-text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+            border-color 0.2s ease,
+            color 0.2s ease,
+            background-color 0.3s ease;
+    }
+
+    .theme-toggle:hover {
+        border-color: var(--color-accent);
+        color: var(--color-accent);
+    }
+
+    /* Show the moon in light mode (click to go dark), the sun in dark mode. */
+    .icon-sun {
+        display: none;
+    }
+
+    .icon-moon {
+        display: block;
+    }
+
+    :global(:root[data-theme="dark"]) .icon-sun {
+        display: block;
+    }
+
+    :global(:root[data-theme="dark"]) .icon-moon {
+        display: none;
+    }
+</style>
+
+<script>
+    // Paint a theme without recording a preference. Used when re-asserting
+    // the theme after a view transition, where writing to storage would
+    // silently turn the OS setting into an explicit choice.
+    function setTheme(theme: string) {
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+    }
+
+    // Paint a theme and remember it — the visitor chose this one.
+    function applyTheme(theme: string) {
+        setTheme(theme);
+        try {
+            localStorage.setItem("theme", theme);
+        } catch {
+            /* storage unavailable (e.g. private mode) — ignore */
+        }
+    }
+
+    // The saved preference if there is one, otherwise the OS setting. Mirrors
+    // the pre-paint inline script in BaseLayout.astro; the duplication is
+    // deliberate, since that copy has to run before first paint.
+    function preferredTheme(): string {
+        try {
+            const stored = localStorage.getItem("theme");
+            if (stored) return stored;
+        } catch {
+            /* storage unavailable — fall through to the OS preference */
+        }
+        return window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+    }
+
+    function currentTheme(): string {
+        return document.documentElement.dataset.theme === "dark"
+            ? "dark"
+            : "light";
+    }
+
+    function setup() {
+        const button = document.getElementById("theme-toggle");
+        if (!button) return;
+
+        const syncLabel = () => {
+            const dark = currentTheme() === "dark";
+            button.setAttribute(
+                "aria-label",
+                dark ? "Switch to light theme" : "Switch to dark theme",
+            );
+            button.setAttribute("aria-pressed", String(dark));
+        };
+
+        button.addEventListener("click", () => {
+            applyTheme(currentTheme() === "dark" ? "light" : "dark");
+            syncLabel();
+        });
+
+        syncLabel();
+    }
+
+    // Runs on first load and after every view-transition navigation.
+    document.addEventListener("astro:page-load", setup);
+
+    // Astro's view-transition swap copies the incoming document's <html>
+    // attributes over the live ones, which drops the data-theme that the
+    // pre-paint script set. Re-assert it after every swap.
+    //
+    // This has to fall back to the OS preference rather than only restoring a
+    // stored one: a visitor who has never touched the toggle has nothing in
+    // storage, so an OS-dark reader used to get the dark theme on first load
+    // and then snap to the light theme on their first navigation.
+    document.addEventListener("astro:after-swap", () => {
+        setTheme(preferredTheme());
+    });
+</script>

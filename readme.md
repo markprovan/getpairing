@@ -38,6 +38,31 @@ than no workflow.
   instead of going live
 - DNS for getpairing.com pointed at Pages, and the old Netlify site retired
 
+## Theme
+
+The design system is ported from [markprovan.com](https://markprovan.com)
+(`markprovan-static`) so the two sites read as siblings: cream/warm-umber
+palette, sage accent, terracotta links, and Fraunces / Newsreader / Inter.
+
+- **Tokens** live at the top of `src/styles/global.css`. The dark palette is a
+  token override under `:root[data-theme="dark"]` — no separate stylesheet.
+- **Dark mode** is `src/components/ThemeToggle.astro`. An `is:inline` script in
+  `DocsLayout` sets `data-theme` before first paint so there's no flash, and the
+  toggle re-asserts it after view transitions. The choice persists in
+  `localStorage`; with nothing stored it follows the OS setting.
+- **Fonts are self-hosted at build time** via Astro's Fonts API — no runtime
+  requests to Google. Note this means the build needs network access to
+  `fonts.google.com`, and a fetch failure is only a *warning*: the build still
+  succeeds but silently ships the fallback stacks (Georgia / system sans). If
+  the type looks wrong on a deploy, check the build log for
+  "No data found for font family".
+- **The sidebar nav is explicit** (`src/components/Sidebar.astro`) so ordering
+  and labels are deliberate, but a build-time check fails the build if a page
+  under `src/pages` isn't linked from it — adding a page and forgetting the nav
+  is an error, not a silent omission.
+- Below 900px the sidebar collapses into a `<details>` disclosure; above it, it
+  sits alongside the content and the summary is hidden.
+
 ## Dependency policy
 
 `pnpm-workspace.yaml` sets `minimumReleaseAge: 1440` (one day) and

@@ -7,6 +7,9 @@ interface NavItem {
   children?: NavItem[];
 }
 
+// Explicit rather than derived, so ordering and labels are a deliberate choice
+// (the page tree alone can't express "Techniques comes before Remote"). The
+// check below stops that choice from silently drifting out of date.
 const navigation: NavItem[] = [
   { label: "Home", href: "/" },
   { label: "What is Pairing", href: "/what-is-pairing/" },
@@ -22,20 +25,51 @@ const navigation: NavItem[] = [
   { label: "Remote Pairing", href: "/remote/" },
 ];
 
+// Fail the build if a page exists that the nav doesn't link. Previously a new
+// page could be added and simply never appear in the sidebar, with nothing to
+// catch it; this turns that into a build error naming the missing route.
+const pageModules = import.meta.glob("../pages/**/*.mdx");
+const pageRoutes = Object.keys(pageModules).map((path) =>
+  path
+    .replace("../pages", "")
+    .replace(/\/index\.mdx$/, "/")
+    .replace(/\.mdx$/, "/")
+);
+
+const linked = new Set(
+  navigation.flatMap((item) => [
+    item.href,
+    ...(item.children?.map((child) => child.href) ?? []),
+  ])
+);
+const orphans = pageRoutes.filter((route) => !linked.has(route));
+if (orphans.length > 0) {
+  throw new Error(
+    `Sidebar is missing ${orphans.length} page(s): ${orphans.join(", ")}. ` +
+      `Add them to the navigation array in src/components/Sidebar.astro.`
+  );
+}
+
 function isActive(href: string): boolean {
   const normalizedPath = pathname.endsWith("/") ? pathname : pathname + "/";
-  const normalizedHref = href.endsWith("/") ? href : href + "/";
-  return normalizedPath === normalizedHref;
+  return normalizedPath === href;
 }
 ---
 
-<aside>
-  <nav>
+{/* Open by default so the links are visible without interaction. The summary
+    is hidden from ~900px up, where the sidebar sits alongside the content and
+    there is nothing to collapse. */}
+<details class="docs-sidebar" open>
+  <summary>Contents</summary>
+  <nav aria-label="Site">
     <ul>
       {
         navigation.map((item) => (
           <li>
-            <a href={item.href} class:list={[{ active: isActive(item.href) }]}>
+            <a
+              href={item.href}
+              aria-current={isActive(item.href) ? "page" : undefined}
+            >
               {item.label}
             </a>
             {item.children && (
@@ -44,7 +78,7 @@ function isActive(href: string): boolean {
                   <li>
                     <a
                       href={child.href}
-                      class:list={[{ active: isActive(child.href) }]}
+                      aria-current={isActive(child.href) ? "page" : undefined}
                     >
                       {child.label}
                     </a>
@@ -57,13 +91,31 @@ function isActive(href: string): boolean {
       }
     </ul>
   </nav>
-</aside>
+</details>
 
 <style>
-  aside {
-    width: 220px;
-    flex-shrink: 0;
-    padding: 1.5rem 0;
+  .docs-sidebar {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+
+  summary {
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: var(--space-xs) 0;
+    list-style-position: inside;
+  }
+
+  summary:hover {
+    color: var(--color-link);
+  }
+
+  nav {
+    padding-top: var(--space-xs);
   }
 
   nav ul {
@@ -73,45 +125,52 @@ function isActive(href: string): boolean {
   }
 
   nav ul ul {
-    padding-left: 1rem;
+    padding-left: var(--space-sm);
+    margin-top: var(--space-xs);
   }
 
   nav li {
-    margin: 0.25rem 0;
+    margin-bottom: 0;
   }
 
   nav a {
-    color: #000;
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    color: var(--color-text-muted);
     text-decoration: none;
-    font-size: 0.875rem;
     display: block;
-    padding: 0.25rem 0;
+    padding: 0.3rem 0 0.3rem var(--space-xs);
+    border-left: 2px solid transparent;
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease;
   }
 
   nav a:hover {
-    color: #33e;
+    color: var(--color-link);
+    text-decoration: none;
   }
 
-  nav a.active {
-    color: #33e;
-    font-weight: 700;
+  nav a[aria-current="page"] {
+    color: var(--color-text);
+    font-weight: 500;
+    border-left-color: var(--color-accent);
   }
 
-  @media (max-width: 768px) {
-    aside {
-      width: 100%;
-      padding: 1rem 0 0;
-      border-bottom: 1px solid #f6f6f6;
+  @media (min-width: 900px) {
+    .docs-sidebar {
+      width: var(--width-sidebar);
+      flex-shrink: 0;
+      border-bottom: none;
+      padding-bottom: 0;
+      margin-bottom: 0;
+      position: sticky;
+      top: var(--space-md);
+      align-self: start;
     }
 
-    nav ul {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem 1rem;
-    }
-
-    nav ul ul {
-      padding-left: 0;
+    summary {
+      display: none;
     }
   }
 </style>
