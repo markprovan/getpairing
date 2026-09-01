@@ -23,16 +23,20 @@ corepack pnpm preview    # serve the built site locally
 
 ## Deployment
 
-Pushing to `master` runs `.github/workflows/deploy.yml`, which builds and
-publishes `dist/` to **Cloudflare Pages** (project `getpairing`). It needs two
-repository secrets:
+Not wired up yet. The site is destined for **Cloudflare Pages**, but the CI
+deploy job is deliberately absent until the `getpairing` Pages project and its
+credentials exist — a workflow that fails on every push to `master` is worse
+than no workflow.
 
-- `CLOUDFLARE_API_TOKEN` — with the *Cloudflare Pages: Edit* permission
-- `CLOUDFLARE_ACCOUNT_ID`
+`corepack pnpm deploy` works locally today if you have `wrangler` authenticated
+(`wrangler login`). Restoring the automated deploy needs:
 
-The Pages project's **production branch must be `master`** to match the
-`--branch=master` flag, otherwise uploads land as preview deployments instead of
-going live. `corepack pnpm deploy` does the same thing locally as an escape hatch.
+- repo secrets `CLOUDFLARE_API_TOKEN` (with *Cloudflare Pages: Edit*) and
+  `CLOUDFLARE_ACCOUNT_ID`
+- a `getpairing` Pages project whose **production branch is `master`**, to match
+  the `--branch=master` flag — otherwise uploads land as preview deployments
+  instead of going live
+- DNS for getpairing.com pointed at Pages, and the old Netlify site retired
 
 ## Dependency policy
 
