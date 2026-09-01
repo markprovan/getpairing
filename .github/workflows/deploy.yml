@@ -2,27 +2,45 @@ name: Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [master]
+  workflow_dispatch:
+
+# A second push shouldn't race the first one onto the live site.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://getpairing.com
     permissions:
       contents: read
       deployments: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
-      - run: npm ci
-      - run: npm run build
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build
 
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=getpairing
+      # wrangler comes from the lockfile rather than a marketplace action, so the
+      # deploy uses a version we've actually resolved and can bump via Dependabot.
+      # --branch=master must match the Pages project's production branch, or the
+      # upload lands as a preview deployment instead of going live.
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm exec wrangler pages deploy dist --project-name=getpairing --branch=master
