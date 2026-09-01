@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Must match the Worker created in the Cloudflare dashboard. `wrangler deploy`
+  // CREATES a Worker when the name doesn't exist rather than failing, so a typo
+  // here quietly produces a second Worker instead of an error — and the custom
+  // domain would stay pointed at the original.
+  "name": "getpairing",
+  "compatibility_date": "2026-09-01",
+
+  // Assets-only Worker: there's no `main`, so no Worker script runs at all and
+  // Cloudflare serves dist/ straight from its asset store. A static site needs
+  // nothing more than this.
+  "assets": {
+    "directory": "./dist",
+    // Serve our built 404.astro for unmatched paths instead of a bare
+    // Cloudflare error page.
+    "not_found_handling": "404-page"
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}

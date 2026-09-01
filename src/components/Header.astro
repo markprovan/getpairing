@@ -1,45 +1,87 @@
 ---
+import ThemeToggle from "./ThemeToggle.astro";
+import { SITE_TITLE, SITE_DESCRIPTION, SITE_REPO } from "../consts";
 ---
 
-<header>
-  <a href="/" class="site-title">
-    <h1>Get Pairing</h1>
-  </a>
-  <nav>
-    <a href="https://github.com/markprovan/getpairing">GitHub</a>
-  </nav>
+<header class="site-header">
+  <div class="masthead">
+    <div class="site-info">
+      <a href="/" class="site-title">{SITE_TITLE}</a>
+      <span class="tagline">{SITE_DESCRIPTION}</span>
+    </div>
+    <div class="actions">
+      <a href={SITE_REPO} class="repo-link">GitHub</a>
+      <ThemeToggle />
+    </div>
+  </div>
 </header>
 
 <style>
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    max-width: 1024px;
+  .site-header {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .masthead {
+    max-width: var(--width-shell);
     margin: 0 auto;
-    padding: 1rem;
+    padding: var(--space-lg) var(--space-md) var(--space-md);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-md);
+  }
+
+  .site-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    min-width: 0;
   }
 
   .site-title {
-    color: inherit;
+    font-family: var(--font-heading);
+    font-size: clamp(1.6rem, 2.5vw + 1rem, 2rem);
+    font-weight: 700;
+    color: var(--color-text);
     text-decoration: none;
+    line-height: 1.2;
   }
 
   .site-title:hover {
-    color: inherit;
-  }
-
-  .site-title h1 {
-    font-size: 1.25rem;
-    margin: 0;
-  }
-
-  nav a {
-    color: #33e;
+    color: var(--color-link);
     text-decoration: none;
   }
 
-  nav a:hover {
-    color: #119;
+  .tagline {
+    font-size: 1.1rem;
+    font-style: italic;
+    color: var(--color-link);
+    letter-spacing: 0.01em;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-shrink: 0;
+  }
+
+  .repo-link {
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+
+  .repo-link:hover {
+    color: var(--color-link);
+    text-decoration: none;
+  }
+
+  @media (max-width: 600px) {
+    .tagline {
+      font-size: 1rem;
+    }
   }
 </style>

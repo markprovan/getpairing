@@ -1,169 +1,165 @@
 ---
-import Sidebar from "../components/Sidebar.astro";
+import { Font } from "astro:assets";
+import { ClientRouter } from "astro:transitions";
 import Header from "../components/Header.astro";
+import Sidebar from "../components/Sidebar.astro";
+import { SITE_TITLE, SITE_DESCRIPTION, SITE_REPO } from "../consts";
+import "../styles/global.css";
 
 interface Props {
   title?: string;
+  description?: string;
+  // Present when this layout is used via an .mdx `layout:` — Astro passes the
+  // page's frontmatter under this prop rather than spreading it.
+  frontmatter?: { title?: string; description?: string };
 }
 
-const { title } = Astro.props;
-const siteTitle = "Get Pairing";
-const pageTitle = title ? `${title} | ${siteTitle}` : siteTitle;
+const { frontmatter } = Astro.props;
+
+// Frontmatter first: when rendering an .mdx page the title arrives as
+// `frontmatter.title`, NOT as a top-level prop. Reading only `Astro.props.title`
+// (as this layout used to) meant every page in the site shipped the same
+// `<title>Get Pairing</title>`. The direct props are the fallback, for .astro
+// pages like 404 that pass them explicitly.
+const title = frontmatter?.title ?? Astro.props.title;
+const description =
+  frontmatter?.description ?? Astro.props.description ?? SITE_DESCRIPTION;
+
+// The home page is already called "Get Pairing" — don't render it twice.
+const pageTitle = title && title !== SITE_TITLE
+  ? `${title} | ${SITE_TITLE}`
+  : SITE_TITLE;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const year = new Date().getFullYear();
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
+    <meta name="color-scheme" content="light dark" />
     <meta charset="UTF-8" />
+
+    <!-- Set the theme before first paint to avoid a flash of the wrong theme.
+         Uses the saved preference, falling back to the OS setting. Deliberately
+         duplicates the logic in ThemeToggle.astro, which cannot run this early. -->
+    <script is:inline>
+      (() => {
+        try {
+          const stored = localStorage.getItem("theme");
+          const theme =
+            stored ||
+            (window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light");
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+        } catch {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="A guide to get you started, or improve your pair programming experience"
-    />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalURL} />
+
+    <Font cssVariable="--font-serif" preload />
+    <Font cssVariable="--font-heading" preload />
+    <Font cssVariable="--font-sans" preload />
+
+    <ClientRouter />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content={SITE_TITLE} />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:url" content={canonicalURL} />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+
     <title>{pageTitle}</title>
   </head>
   <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <Header />
-    <div class="container">
+    <div class="docs-shell">
       <Sidebar />
-      <main>
+      <main id="main-content">
         <slot />
       </main>
     </div>
+    <footer class="site-footer">
+      <p>
+        &copy; {year} {SITE_TITLE} · <a href={SITE_REPO}>Contribute on GitHub</a>
+      </p>
+    </footer>
   </body>
 </html>
 
 <style>
-  :global(*) {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-
-  :global(body) {
-    font-family: system-ui, sans-serif;
-    font-weight: 400;
-    line-height: 1.5;
-    color: #000;
-    background: #fff;
-  }
-
-  :global(h1, h2, h3, h4, h5, h6) {
-    font-weight: 700;
-    line-height: 1.25;
-  }
-
-  :global(h1) {
-    font-size: 2rem;
-    margin-top: 1rem;
-  }
-
-  :global(h2) {
-    font-size: 1.5rem;
-  }
-
-  :global(h3) {
-    font-size: 1.25rem;
-  }
-
-  :global(h4) {
-    font-size: 1.125rem;
-  }
-
-  :global(a) {
-    color: #33e;
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: var(--space-md);
+    z-index: 100;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-text);
+    color: var(--color-bg);
+    border-radius: 4px;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
     text-decoration: none;
   }
 
-  :global(a:hover) {
-    color: #119;
+  .skip-link:focus {
+    top: var(--space-sm);
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
   }
 
-  :global(pre) {
-    font-family: Menlo, monospace;
-    font-size: 0.875rem;
-    padding: 1rem;
-    color: #000;
-    background: #f6f6f6;
-    overflow: auto;
-    border-radius: 4px;
-  }
-
-  :global(code) {
-    font-family: Menlo, monospace;
-    color: #119;
-    font-size: 0.875rem;
-  }
-
-  :global(pre code) {
-    color: inherit;
-  }
-
-  :global(table) {
-    width: 100%;
-    margin: 1.5rem 0;
-    border-collapse: separate;
-    border-spacing: 0;
-  }
-
-  :global(th, td) {
-    text-align: left;
-    padding: 4px 4px 4px 0;
-    border-bottom: solid #f6f6f6;
-  }
-
-  :global(th) {
-    vertical-align: bottom;
-    border-bottom-width: 2px;
-  }
-
-  :global(td) {
-    vertical-align: top;
-    border-bottom-width: 1px;
-  }
-
-  :global(hr) {
-    border: 0;
-    border-bottom: 1px solid #f6f6f6;
-  }
-
-  :global(img) {
-    max-width: 100%;
-  }
-
-  :global(ol, ul) {
-    padding-left: 1.5rem;
-    margin: 0.5rem 0;
-  }
-
-  :global(li) {
-    margin: 0.25rem 0;
-  }
-
-  :global(p) {
-    margin: 0.75rem 0;
-  }
-
-  .container {
-    display: flex;
-    max-width: 1024px;
+  .docs-shell {
+    max-width: var(--width-shell);
     margin: 0 auto;
-    padding: 0 1rem;
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
   }
 
   main {
-    flex: 1;
     min-width: 0;
-    padding: 1.5rem 2rem;
+    max-width: var(--max-width);
   }
 
-  @media (max-width: 768px) {
-    .container {
-      flex-direction: column;
+  /* Sidebar alongside the content once there's room for both. Below this the
+     shell stays stacked and the sidebar renders as a collapsible disclosure. */
+  @media (min-width: 900px) {
+    .docs-shell {
+      flex-direction: row;
+      gap: var(--space-xl);
+      padding: var(--space-lg) var(--space-md);
     }
+  }
 
-    main {
-      padding: 1rem;
-    }
+  .site-footer {
+    max-width: var(--width-shell);
+    margin: 0 auto;
+    padding: var(--space-xl) var(--space-md);
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+  }
+
+  .site-footer p {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin: 0;
   }
 </style>

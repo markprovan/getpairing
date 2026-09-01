@@ -22,3 +22,137 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm build
+
+      # Fonts are fetched at build time and a failure is only a *warning*, so
+      # without this check a deploy can silently ship the fallback stacks
+      # (Georgia / system sans) instead of Fraunces and Newsreader.
+      - name: Check the fonts were actually fetched
+        run: |
+          set -euo pipefail
+          count=$(find dist \( -name '*.woff2' -o -name '*.woff' -o -name '*.ttf' -o -name '*.otf' \) | wc -l)
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No font files in dist/ — Astro could not fetch them. The build succeeded but would ship fallback fonts."
+            exit 1
+          fi
+          echo "Fonts present: $count file(s)"
+
+      # Uploaded so the preview job ships this exact output instead of building
+      # a second time — one build, one artifact.
+      - uses: actions/upload-artifact@v5
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+
+  # Preview deployment to Cloudflare Workers, as an unpromoted Worker version.
+  # Skips cleanly when the Cloudflare secrets aren't configured, so a missing
+  # secret never blocks a PR.
+  preview:
+    needs: [build]
+    runs-on: ubuntu-latest
+    # Recorded against the `preview` environment, so deploys show up in the
+    # Environments tab and the PR timeline. The URL is resolved from the deploy
+    # step's output. Note: giving this environment required reviewers would make
+    # every PR preview wait for approval, which rather defeats the point.
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.url }}
+    permissions:
+      contents: read
+      pull-requests: write
+      deployments: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@v6
+        with:
+          name: dist
+          path: dist
+
+      # Read through env rather than interpolated into the script body, so the
+      # value is never expanded onto a command line.
+      - id: check
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "${TOKEN:-}" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN is not set — skipping the preview deploy."
+          fi
+
+      # `versions upload` uploads a new Worker version WITHOUT promoting it to
+      # production and returns a preview URL for it — the Workers equivalent of
+      # a Pages preview deployment. Production is only ever changed by
+      # `wrangler deploy` in deploy.yml.
+      - name: Upload preview version
+        if: steps.check.outputs.ok == 'true'
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          pnpm exec wrangler versions upload \
+            --message "PR #${PR}" | tee deploy.log
+          url=$(grep -oE 'https://[A-Za-z0-9.-]+\.workers\.dev' deploy.log | tail -1)
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Preview version uploaded"
+            echo ""
+            echo "${url:-(no preview URL found in wrangler output)}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment the preview URL
+        if: steps.check.outputs.ok == 'true' && steps.deploy.outputs.url != ''
+        uses: actions/github-script@v9
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        with:
+          script: |
+            const url = process.env.URL;
+            const marker = '<!-- preview-url -->';
+            const body = [
+              marker,
+              `**Preview:** ${url}`,
+              '',
+              `Deployed from \`${context.sha.slice(0, 7)}\`. Updates on every push to this PR.`,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(
+              (c) => c.user.type === 'Bot' && c.body.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
