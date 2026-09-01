@@ -23,31 +23,36 @@ corepack pnpm preview    # serve the built site locally
 
 ## Deployment
 
-Deployed to **Cloudflare Pages** (project `getpairing`, a **Direct Upload**
-project — Cloudflare is deliberately *not* connected to this repo). GitHub
-Actions is the only thing that builds the site; wrangler just ships the output.
+Deployed to **Cloudflare Workers** (static assets), not Pages. Cloudflare now
+[recommends Workers for new projects](https://developers.cloudflare.com/workers/static-assets/migration-guides/migrate-from-pages/)
+and wrangler nudges you off Pages, so that's where this lives.
 
-- Push to `master` → `.github/workflows/deploy.yml` builds and publishes to
-  production.
-- Open a PR → the `preview` job in `ci.yml` deploys the same artifact to a
-  preview URL and comments it on the PR. It skips cleanly if the Cloudflare
-  secrets aren't set, so a missing secret never blocks a PR. Deploys are
-  recorded against the `preview` GitHub environment (production against
-  `production`) — don't put required reviewers on `preview`, or every PR will
-  wait for an approval before it can show you anything.
-- `corepack pnpm deploy` does a production deploy locally (needs
-  `wrangler login`).
+`wrangler.jsonc` declares an **assets-only Worker**: there's no `main`, so no
+Worker script runs at all — Cloudflare serves `dist/` from its asset store.
+`not_found_handling: "404-page"` makes unmatched paths serve our built
+`404.astro` instead of a bare Cloudflare error.
+
+GitHub Actions is the only thing that builds the site; wrangler just ships the
+output. Cloudflare is deliberately *not* connected to the repo, so there's one
+build environment rather than two places for build config to drift.
+
+- Push to `master` → `deploy.yml` builds and runs `wrangler deploy`.
+- Open a PR → the `preview` job runs `wrangler versions upload`, which uploads a
+  Worker version **without** promoting it to production and returns a preview URL,
+  posted as a PR comment that updates in place. Production only ever changes via
+  `wrangler deploy`.
+- `corepack pnpm deploy` deploys to production locally (needs `wrangler login`).
 
 Required repository secrets:
 
-- `CLOUDFLARE_API_TOKEN` — with the *Cloudflare Pages: Edit* permission
+- `CLOUDFLARE_API_TOKEN` — with permission to edit Workers
 - `CLOUDFLARE_ACCOUNT_ID`
 
-Two things that will bite if changed: the Pages project's **production branch
-must be `master`** to match the `--branch=master` flag, or uploads land as
-preview deployments instead of going live; and a Direct Upload project
-[cannot be converted to a Git-connected one](https://developers.cloudflare.com/pages/get-started/direct-upload/)
-(or back) — that needs a new project.
+**The `name` in `wrangler.jsonc` must match the Worker in the dashboard.**
+Unlike Pages — which errors when the project is missing — `wrangler deploy`
+*creates* a Worker when the name doesn't exist. A typo therefore produces a
+second, silently-working Worker while the custom domain stays pointed at the
+original.
 
 Both workflows **fail the build if no font files land in `dist/`**. Astro fetches
 the faces at build time and a fetch failure is only a *warning*, so without that

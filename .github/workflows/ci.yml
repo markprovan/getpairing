@@ -44,8 +44,9 @@ jobs:
           path: dist
           retention-days: 7
 
-  # Preview deployment to Cloudflare Pages. Skips cleanly when the Cloudflare
-  # secrets aren't configured, so a missing secret never blocks a PR.
+  # Preview deployment to Cloudflare Workers, as an unpromoted Worker version.
+  # Skips cleanly when the Cloudflare secrets aren't configured, so a missing
+  # secret never blocks a PR.
   preview:
     needs: [build]
     runs-on: ubuntu-latest
@@ -92,9 +93,11 @@ jobs:
             echo "::notice::CLOUDFLARE_API_TOKEN is not set — skipping the preview deploy."
           fi
 
-      # --branch is pr-<number> rather than the git branch: Pages derives a
-      # subdomain alias from it, and our branch names contain slashes.
-      - name: Deploy preview
+      # `versions upload` uploads a new Worker version WITHOUT promoting it to
+      # production and returns a preview URL for it — the Workers equivalent of
+      # a Pages preview deployment. Production is only ever changed by
+      # `wrangler deploy` in deploy.yml.
+      - name: Upload preview version
         if: steps.check.outputs.ok == 'true'
         id: deploy
         env:
@@ -103,15 +106,14 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          pnpm exec wrangler pages deploy dist \
-            --project-name=getpairing \
-            --branch="pr-${PR}" | tee deploy.log
-          url=$(grep -oE 'https://[a-z0-9.-]+\.pages\.dev' deploy.log | tail -1)
+          pnpm exec wrangler versions upload \
+            --message "PR #${PR}" | tee deploy.log
+          url=$(grep -oE 'https://[A-Za-z0-9.-]+\.workers\.dev' deploy.log | tail -1)
           echo "url=${url}" >> "$GITHUB_OUTPUT"
           {
-            echo "### Preview deployed"
+            echo "### Preview version uploaded"
             echo ""
-            echo "${url}"
+            echo "${url:-(no preview URL found in wrangler output)}"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Comment the preview URL
@@ -122,7 +124,7 @@ jobs:
         with:
           script: |
             const url = process.env.URL;
-            const marker = '<!-- pages-preview -->';
+            const marker = '<!-- preview-url -->';
             const body = [
               marker,
               `**Preview:** ${url}`,
