@@ -1,21 +1,24 @@
 {
   "private": true,
-  "name": "gatsby-starter-documentation",
-  "version": "0.0.27",
+  "name": "getpairing",
+  "version": "1.0.0",
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
   "scripts": {
-    "start": "gatsby develop",
-    "build": "gatsby build",
-    "now-build": "yarn build"
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "tsc --noEmit",
+    "deploy": "pnpm build && wrangler pages deploy dist --project-name=getpairing --branch=master"
   },
   "license": "MIT",
   "dependencies": {
-    "gatsby": "^2.21.1",
-    "gatsby-theme-documentation": "^0.0.27",
-    "react": "^16.14.0",
-    "react-dom": "^16.13.1"
+    "@astrojs/mdx": "^7.0.8",
+    "astro": "^7.2.9"
   },
-  "resolutions": {
-    "acorn": "^7.1.1",
-    "minimist": "^1.2.3"
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "wrangler": "^4.127.1"
   }
 }

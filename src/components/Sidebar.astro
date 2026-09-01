@@ -1,0 +1,117 @@
+---
+const pathname = Astro.url.pathname;
+
+interface NavItem {
+  label: string;
+  href: string;
+  children?: NavItem[];
+}
+
+const navigation: NavItem[] = [
+  { label: "Home", href: "/" },
+  { label: "What is Pairing", href: "/what-is-pairing/" },
+  {
+    label: "Techniques",
+    href: "/techniques/",
+    children: [
+      { label: "Pomodoro", href: "/techniques/pomodoro/" },
+      { label: "Ping Pong", href: "/techniques/ping-pong/" },
+      { label: "Commit by Commit", href: "/techniques/commit-by-commit/" },
+    ],
+  },
+  { label: "Remote Pairing", href: "/remote/" },
+];
+
+function isActive(href: string): boolean {
+  const normalizedPath = pathname.endsWith("/") ? pathname : pathname + "/";
+  const normalizedHref = href.endsWith("/") ? href : href + "/";
+  return normalizedPath === normalizedHref;
+}
+---
+
+<aside>
+  <nav>
+    <ul>
+      {
+        navigation.map((item) => (
+          <li>
+            <a href={item.href} class:list={[{ active: isActive(item.href) }]}>
+              {item.label}
+            </a>
+            {item.children && (
+              <ul>
+                {item.children.map((child) => (
+                  <li>
+                    <a
+                      href={child.href}
+                      class:list={[{ active: isActive(child.href) }]}
+                    >
+                      {child.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</aside>
+
+<style>
+  aside {
+    width: 220px;
+    flex-shrink: 0;
+    padding: 1.5rem 0;
+  }
+
+  nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  nav ul ul {
+    padding-left: 1rem;
+  }
+
+  nav li {
+    margin: 0.25rem 0;
+  }
+
+  nav a {
+    color: #000;
+    text-decoration: none;
+    font-size: 0.875rem;
+    display: block;
+    padding: 0.25rem 0;
+  }
+
+  nav a:hover {
+    color: #33e;
+  }
+
+  nav a.active {
+    color: #33e;
+    font-weight: 700;
+  }
+
+  @media (max-width: 768px) {
+    aside {
+      width: 100%;
+      padding: 1rem 0 0;
+      border-bottom: 1px solid #f6f6f6;
+    }
+
+    nav ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem 1rem;
+    }
+
+    nav ul ul {
+      padding-left: 0;
+    }
+  }
+</style>

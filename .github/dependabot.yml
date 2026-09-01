@@ -1,12 +1,40 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
-    open-pull-requests-limit: 50
+  # npm dependencies
+  - package-ecosystem: npm
+    directory: "/"
     schedule:
-      interval: "daily"
+      interval: weekly
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    # Maturity delay: don't open PRs for a release until it's at least a day old.
+    # This migration was held up by exactly that hazard — astro 7.2.10,
+    # @astrojs/mdx 8.0.0 and @astrojs/markdown-satteri 0.4.0 all published within
+    # two minutes of each other, and mdx 8's peer range (`astro: ^7.2.6`) was
+    # loose enough to pair it with astro 7.2.9, whose pinned satteri 0.3.8 can't
+    # render MDX. Mirrors the pnpm `minimumReleaseAge` in pnpm-workspace.yaml,
+    # which enforces the same delay at install time.
+    cooldown:
+      default-days: 1
+    # Group low-risk updates so they arrive as a single PR each.
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+      production-minor-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+
+  # GitHub Actions used in workflows
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - github-actions
