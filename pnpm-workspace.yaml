@@ -1,0 +1,19 @@
+# pnpm 11 reads settings from here rather than the "pnpm" key in package.json,
+# and it *errors* on ignored build scripts, so each one has to be declared.
+
+# These ship prebuilt binaries via platform-specific packages, so their
+# install/build scripts aren't needed. Declining them keeps installs
+# reproducible and avoids running third-party postinstall scripts.
+allowBuilds:
+  esbuild: false
+  sharp: false
+  workerd: false
+
+# Maturity delay (minutes): refuse to resolve a published version until it's at
+# least this old, so a freshly-published release isn't pulled in the moment it
+# lands. 1440 = 1 day. Mirrors the Dependabot `cooldown` in
+# .github/dependabot.yml. This is not hypothetical here: astro 7.2.10 +
+# @astrojs/mdx 8.0.0 + @astrojs/markdown-satteri 0.4.0 all landed within two
+# minutes on 2026-08-31, and mdx 8's loose peer range let it resolve against
+# astro 7.2.9 (satteri 0.3.8), which cannot render MDX at all.
+minimumReleaseAge: 1440

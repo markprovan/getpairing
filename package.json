@@ -3,18 +3,22 @@
   "name": "getpairing",
   "version": "1.0.0",
   "type": "module",
+  "packageManager": "pnpm@11.25.0",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "typecheck": "tsc --noEmit",
+    "deploy": "pnpm build && wrangler pages deploy dist --project-name=getpairing --branch=master"
   },
   "license": "MIT",
   "dependencies": {
-    "@astrojs/mdx": "^4.2.6",
-    "astro": "^5.5.4"
+    "@astrojs/mdx": "^7.0.8",
+    "astro": "^7.2.9"
   },
   "devDependencies": {
-    "typescript": "^5.8.2"
+    "typescript": "^7.0.2",
+    "wrangler": "^4.127.1"
   }
 }
