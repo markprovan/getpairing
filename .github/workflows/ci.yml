@@ -49,9 +49,17 @@ jobs:
   preview:
     needs: [build]
     runs-on: ubuntu-latest
+    # Recorded against the `preview` environment, so deploys show up in the
+    # Environments tab and the PR timeline. The URL is resolved from the deploy
+    # step's output. Note: giving this environment required reviewers would make
+    # every PR preview wait for approval, which rather defeats the point.
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.url }}
     permissions:
       contents: read
       pull-requests: write
+      deployments: write
     steps:
       - uses: actions/checkout@v7
 

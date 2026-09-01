@@ -31,7 +31,10 @@ Actions is the only thing that builds the site; wrangler just ships the output.
   production.
 - Open a PR → the `preview` job in `ci.yml` deploys the same artifact to a
   preview URL and comments it on the PR. It skips cleanly if the Cloudflare
-  secrets aren't set, so a missing secret never blocks a PR.
+  secrets aren't set, so a missing secret never blocks a PR. Deploys are
+  recorded against the `preview` GitHub environment (production against
+  `production`) — don't put required reviewers on `preview`, or every PR will
+  wait for an approval before it can show you anything.
 - `corepack pnpm deploy` does a production deploy locally (needs
   `wrangler login`).
 
