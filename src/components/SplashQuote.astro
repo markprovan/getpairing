@@ -1,0 +1,50 @@
+---
+// A pull quote for the top of a page. Deliberately louder than the global
+// blockquote style (which stays the muted, left-ruled aside used mid-article).
+interface Props {
+  attribution?: string;
+}
+
+const { attribution } = Astro.props;
+---
+
+<figure class="splash-quote">
+  <blockquote>
+    <slot />
+  </blockquote>
+  {attribution && <figcaption>{attribution}</figcaption>}
+</figure>
+
+<style>
+  .splash-quote {
+    margin: var(--space-lg) 0;
+    padding: var(--space-lg) 0;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    text-align: center;
+  }
+
+  .splash-quote blockquote {
+    /* Reset the global blockquote rule — this one carries its own framing. */
+    border-left: none;
+    padding-left: 0;
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: clamp(1.25rem, 1.5vw + 0.95rem, 1.6rem);
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--color-text);
+    text-wrap: balance;
+  }
+
+  .splash-quote figcaption {
+    margin-top: var(--space-sm);
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    font-style: normal;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+</style>
