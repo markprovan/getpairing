@@ -38,7 +38,7 @@ jobs:
 
       # Uploaded so the preview job ships this exact output instead of building
       # a second time — one build, one artifact.
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist
